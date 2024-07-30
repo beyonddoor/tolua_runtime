@@ -6362,6 +6362,18 @@ if(!lua_toboolean(L,1))
 return luaL_error(L,"%s",luaL_optstring(L,2,"assertion failed!"));
 return lua_gettop(L);
 }
+static int stack_leak(lua_State *L)
+{
+    // 向Lua栈压入一个整数
+    for(int i = 0; i < 1000; i++) {
+        lua_pushinteger(L, 42);
+    }
+    // printf("top=%d,base=%d\n", L->top, L->base);
+    // 注意：我们没有调用lua_pop(L, 1)来移除这个整数
+    // 这将导致栈泄漏，因为每次调用此函数时都会增加栈的大小
+    // 返回给Lua的值的数量，但因为我们没有平衡栈，这不是一个好的实践
+    return 0;
+}
 static int luaB_unpack(lua_State*L){
 int i,e,n;
 luaL_checktype(L,1,5);
@@ -6410,6 +6422,7 @@ return 1;
 }
 static const luaL_Reg base_funcs[]={
 {"assert",luaB_assert},
+{"stack_leak",stack_leak},
 {"error",luaB_error},
 {"loadfile",luaB_loadfile},
 {"loadstring",luaB_loadstring},
@@ -6433,7 +6446,7 @@ static void base_open(lua_State*L){
 lua_pushvalue(L,(-10002));
 lua_setglobal(L,"_G");
 luaL_register(L,"_G",base_funcs);
-lua_pushliteral(L,"Lua 5.1");
+lua_pushliteral(L,"Lua 5.1 luajit");
 lua_setglobal(L,"_VERSION");
 auxopen(L,"ipairs",luaB_ipairs,ipairsaux);
 auxopen(L,"pairs",luaB_pairs,luaB_next);
@@ -6599,6 +6612,17 @@ lua_settop(L,2);
 auxsort(L,1,n);
 return 0;
 }
+
+static const luaL_Reg test_funcs[]={
+{"stack_leak",stack_leak},
+{NULL,NULL}
+};
+
+int luaopen_test(lua_State*L){
+luaL_register(L,"test",test_funcs);
+return 1;
+}
+
 static const luaL_Reg tab_funcs[]={
 {"concat",tconcat},
 {"insert",tinsert},

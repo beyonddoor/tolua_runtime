@@ -56,7 +56,7 @@ CCOPT_mips=
 #
 CCDEBUG=
 # Uncomment the next line to generate debug information:
-#CCDEBUG= -g
+CCDEBUG= -g
 #
 CCWARN= -Wall
 # Uncomment the next line to enable more warnings:
@@ -720,6 +720,9 @@ $(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP)
 	$(E) "LINK      $@"
 	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(TARGET_O) $(TARGET_ALIBS)
 	$(Q)$(TARGET_STRIP) $@
+	pwd
+	ls -l $@
+	cp $@ ~/
 	$(E) "OK        Successfully built LuaJIT"
 
 ##############################################################################

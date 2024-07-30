@@ -59,6 +59,24 @@ static void laction(int i)
 }
 #endif
 
+static int stack_leak(lua_State *L)
+{
+    // 向Lua栈压入一个整数
+    for(int i = 0; i < 1000; i++) {
+        lua_pushinteger(L, 42);
+    }
+    // printf("top=%d,base=%d\n", L->top, L->base);
+    // 注意：我们没有调用lua_pop(L, 1)来移除这个整数
+    // 这将导致栈泄漏，因为每次调用此函数时都会增加栈的大小
+    // 返回给Lua的值的数量，但因为我们没有平衡栈，这不是一个好的实践
+    return 0;
+}
+
+static const luaL_Reg base_funcs[]={
+{"stack_leak",stack_leak},
+{NULL,NULL},
+};
+
 static void print_usage(void)
 {
   fputs("usage: ", stderr);
@@ -569,14 +587,36 @@ static int pmain(lua_State *L)
   return 0;
 }
 
+static int my_itoa(lua_State *L) {
+  lua_Number n = luaL_checknumber(L, 1);
+  // printf("%f\n", (float)n);
+  char buf[32];
+  sprintf(buf, "%f", (float)n);
+  for(int i=0; i<10; i++) {
+    lua_pushstring(L, buf);
+  }
+  return 1;
+}
+
 int main(int argc, char **argv)
 {
+  printf("==> main <==\n");
+
   int status;
   lua_State *L = lua_open();
   if (L == NULL) {
     l_message(argv[0], "cannot create state: not enough memory");
     return EXIT_FAILURE;
   }
+
+  // luaL_register(L,"_G",base_funcs);
+
+  lua_pushcfunction(L, stack_leak);
+  lua_setglobal(L, "stack_leak");
+
+  lua_pushcfunction(L, my_itoa);
+  lua_setglobal(L, "itoa");
+
   smain.argc = argc;
   smain.argv = argv;
   status = lua_cpcall(L, pmain, NULL);
